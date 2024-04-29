@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Web File Manager</title>
+  </head>
+  <body>
+    <h1 class="text-center text-3xl font-bold underline">Web File Manager</h1>
+
+    <input type="file" id="fileInput" />
+    <input type="text" id="passphraseInput" placeholder="Enter passphrase" />
+    <input type="file" id="fileInput" />
+    <button onclick="uploadFile()">Upload</button>
+
+    <h2>Latest Files</h2>
+    <ul id="fileList"></ul>
+    <button onclick="encryptWithPassphrase()">Encrypt with Passphrase</button>
+    <button onclick="decryptWithPassphrase()">Decrypt with Passphrase</button>
+    <button onclick="generateKeyPair()">Generate Key Pair</button>
+    <button onclick="encryptWithPublicKey()">Encrypt with Public Key</button>
+    <button onclick="decryptWithPrivateKey()">Decrypt with Private Key</button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsencrypt/3.0.0/jsencrypt.min.js"></script>
+    <script>
+      let publicKey;
+      let privateKey;
+
+      // Function to upload a file
+      function uploadFile() {
+        const fileInput = document.getElementById("fileInput");
+        const file = fileInput.files[0];
+
+        saveFileLocally(file);
+      }
+
+      // Function to save the file locally
+      function saveFileLocally(file) {
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          const fileContent = event.target.result;
+
+          const fileName = file.name;
+          const fileData = {
+            name: fileName,
+            content: fileContent,
+          };
+
+          const link = document.createElement("a");
+          link.href = fileContent;
+          link.download = fileName;
+          link.click();
+
+          getFileList();
+        };
+        reader.readAsDataURL(file);
+      }
+
+      // Function to get the latest file list
+      function getFileList() {
+        fetch("/files")
+          .then((response) => response.json())
+          .then((data) => {
+            const fileList = document.getElementById("fileList");
+            fileList.innerHTML = "";
+
+            data.forEach((file) => {
+              const listItem = document.createElement("li");
+              listItem.textContent = file;
+              fileList.appendChild(listItem);
+            });
+          })
+          .catch((error) => {
+            console.error("Error retrieving file list:", error);
+          });
+      }
+
+      function encryptWithPassphrase() {
+        const fileInput = document.getElementById("fileInput");
+        const file = fileInput.files[0];
+
+        const passphraseInput = document.getElementById("passphraseInput");
+        const passphrase = passphraseInput.value;
+
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          const fileContent = event.target.result;
+
+          // Encrypt the file content with the passphrase
+          const encryptedContent = CryptoJS.AES.encrypt(
+            fileContent,
+            passphrase
+          ).toString();
+
+          // Save the encrypted content or send it to a server for storage
+          console.log("Encrypted Content with Passphrase:", encryptedContent);
+        };
+
+        reader.readAsText(file);
+      }
+
+      function decryptWithPassphrase() {
+        const fileInput = document.getElementById("fileInput");
+        const file = fileInput.files[0];
+
+        const passphraseInput = document.getElementById("passphraseInput");
+        const passphrase = passphraseInput.value;
+
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          const fileContent = event.target.result;
+
+          // Decrypt the file content with the passphrase
+          const decryptedContent = CryptoJS.AES.decrypt(
+            fileContent,
+            passphrase
+          ).toString(CryptoJS.enc.Utf8);
+
+          // Display or process the decrypted content
+          console.log("Decrypted Content with Passphrase:", decryptedContent);
+        };
+
+        reader.readAsText(file);
+      }
+
+      function generateKeyPair() {
+        const crypt = new JSEncrypt();
+
+        // Generate a new RSA key pair
+        crypt.getKey();
+        publicKey = crypt.getPublicKey();
+        privateKey = crypt.getPrivateKey();
+
+        console.log("Public Key:", publicKey);
+        console.log("Private Key:", privateKey);
+      }
+
+      function encryptWithPublicKey() {
+        const fileInput = document.getElementById("fileInput");
+        const file = fileInput.files[0];
+
+        const crypt = new JSEncrypt();
+        crypt.setPublicKey(publicKey);
+
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          const fileContent = event.target.result;
+
+          // Encrypt the file content with the public key
+          const encryptedContent = crypt.encrypt(fileContent);
+
+          // Save the encrypted content or send it to a server for storage
+          console.log("Encrypted Content with Public Key:", encryptedContent);
+        };
+
+        reader.readAsText(file);
+      }
+
+      function decryptWithPrivateKey() {
+        const fileInput = document.getElementById("fileInput");
+        const file = fileInput.files[0];
+
+        const crypt = new JSEncrypt();
+        crypt.setPrivateKey(privateKey);
+
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          const fileContent = event.target.result;
+
+          // Decrypt the file content with the private key
+          const decryptedContent = crypt.decrypt(fileContent);
+
+          // Display or process the decrypted content
+          console.log("Decrypted Content with Private Key:", decryptedContent);
+        };
+
+        reader.readAsText(file);
+      }
+    </script>
+  </body>
+</html>
